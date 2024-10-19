@@ -1,0 +1,1008 @@
+APPENDIX 1
+
+Secure Auditing	
+Resource logfile (bool encryptionStatus, int pol, int severityLevel){
+List ldisk = [];
+int index;
+int encrypted = encryptionStatus;
+int keysize = 128; mutex file(pol); list qlist=[];
+int initLevel;
+int open (int mode, int severityLevel) = reinitialize ()
+where {
+reinitialize() = case mode of {
+WRITEONLY: CheckSeverity(SeverityLevel);
+Default: READ_ONLY()
+where{
+qlist = if ldisk !=nil then ldisk; READ_ONLY()= qlist;
+}
+}
+}
+generic checkSeverity(int SeverityLevel) = Severity
+where{ ldisk=[]; index =0;
+Severity= case severityLevel of { ALL: initLevel=int.MAXLEVEL; FATAL:   initLevel=100; ERROR: initLevel=200; WARNING: initLevel=300 INFO: initLevel=400;
+DEBUG: initLevel=500; TRACE: initLevel=600; Default: initLevel=0;
+}
+}
+int fileSize(generic p) = (size asa file.lock(p)) asa file.unlock()
+where{
+size asa dis==nil
+where {
+size= 0 fby size + length(hd(dis)); dis= ldisk fby tl(ldisk);
+}
+}
+
+Bool isEncrypted()= encryptedStatus;
+generic operator << (generic input, generic p) = ((write () fby msg) asa file.lock(p)) asa
+file.unlock() where{
+write() = TRUE
+where {
+ldisk = if isencrypted() && input.size<=initLevel then ldisk <> [% encrypt (input, keysize) %] else if input.size<=initLevel && !isencrypted()ldisk <> [% input %] else printMsg;
+index = index + 1;
+where {
+printMsg= ”input is verbose, severity level ^ mkString	(SeverityLevel) ^ number of character allowed be written are ^ mkstring(initLevel }
+}
+}
+generic operator >> (generic p) =(read() asa file.lock(p)) asa file.unlock()
+where {
+read()= buffer asa ldisk==nil
+where{
+buffer = if isencrypted then decrypt(hd(dis), keysize)
+else hd(dis); dis= ldisk fby t1(ldisk)
+}
+}
+
+ 
+
+APPENDIX 2
+
+
+Secure Error Message	
+System SecureErrorMessage(){
+Resource {
+List Policy1;
+}
+Process { ControlErrorMessageVerbosity;
+}
+}
+Resource Policy (string username, int roleName, int wordLevel, generic errorMessage){ String role=username;
+int subject=roleName;
+int wordinessLevel = wordLevel;
+generic object= errorMessage;
+Bool isAuthorizedUser(int role, int wordLevel, generic errorMessage)= checkPolicy()
+where{
+checkPolicy()=if checkPolicyExists(role, wordLevel, errorMessage) then true else
+false;
+}
+Process ControlErrorMessageVerbosity(){generic	checkMessageVerbosity()=if	Policy1.isAuthorized(role,	wordLevel, errorMessage) then PrintMsg else throw InvalidActionException();
+where {
+PrintMsg= mkstring(RName)^ “Authorized User can see verbose error messages”+ stackTrace;
+}
+Exception InValidException()=Message
+where {
+Message = “Invalid Action”
+}
+
+ 
+APPENDIX 3
+
+Input Validation and Output Validation
+System DataValidation { 
+Processes
+ { InputValidation; OutputValidation;
+}
+}
+Process InputValidation() {int num1, num2, x; String input;
+// sqli detection function
+Bool dataSanitization (string input)= sanitize
+where{
+pattern = (“.*\\b(OR|WHERE|1==1|true==true)\\b.*”);
+sanitize= if match(input, pattern) then sqliDetectionMsg() else printMsg;
+where{
+sqliDectectionMsg()= "Invalid input: SQL injection tautology detected." printMsg= "no SQLI detected";
+}
+}
+// exception
+Exception InvalidDataException=..
+//process output validation
+Process OutputSanitization(){
+generic EncodeData(string dataFromServer)= Encode(s1)
+where{
+val=	ith(i, s1);
+Encode(s1) = if value==` ` then	value= `%20` else if value==`!`
+then   value= `%21` else if	value==`”` then value= `%22`   else	if		value==		՚(՚ then value=`%28՚   else		if value==	՚)՚
+then	value=՚%29՚ else if	value==՚<՚	then	value=՚%3C՚
+else	if value==՚>՚		then	value=՚%3E՚ else if value==՚&՚	then	value=՚%26՚ else	if……; ith(i,s1)=Encode;
+i= 1	fby i+1;
+}
+printOutput= “the input is encoded” ^ s1;
+}
+generic decodeData(string s)= decodeASCII
+where{
+decodeASCII=	if val==`%20`   then	val=	` `….;
+ith(i,s)= decodeASCII; i=1 fby i+1;
+}
+} 
+APPENDIX 4 
+Bound Access Prohibition
+ 
+System BufferBoundCheck {
+Resources {
+list	BoundCheckList=[];
+}
+Process {
+BoundCheck();
+}
+};
+Process BoundCheck(){
+generic addToList()= addDataToList() asa BoundCheckList!=nil
+where {
+addDataToList()= if	BoundCheckList[i]!= nil then BoundCheckList	<>	[%
+input%] else	BufferOutOfBoundCheckException(); i=1 fby i+1;
+}
+Exception BufferOutOfBoundCheckException()= PrintMsg
+where {
+PrintMsg= “accessing past the buffer bound is illegal”;
+}
+ 
+APPENDIX 5 
+
+Type Safety, Type Initialization
+ 
+system date (int	d, generic m, int y) {
+generic mm=m;
+int dd=d;
+int yy=y;
+//Enumeration month January – December from 1 to 12.
+generic Now(d, m, y) =  returnCurrentDate
+where {
+returnCurrentDate= d/m/y;
+}
+Bool VerifyDate(int d, generic m,int y)= VerifyDate
+where {
+date	date1; date1.d=d; date1.m=m; date1.y=y;
+verifyDate= if 0<m<=12 then	verifyDays fby Format(date1)
+where{
+int TotalNumberOfDays=31;
+verifyDays()=	if m=09¦¦04¦¦06¦¦11	then TotalNumberOfDays<=30 elseif m==02
+then CheckValidYear() else TotalNumberOfDays<=31;
+where {
+getYear = y mod 100;
+CheckLeapYear=   if   getYear/4==0	then	TotalNumberOfDays<= 29
+else TotalNumberOfDays<= 28;
+// check leap year
+checkValidYear= if y>0001 ||y<=9999 then true	else	false;
+}
+}
+}
+generic Format(generic date1)= validFormat
+where {
+validFormat= date1.d + “/” + date1.m+ “/” + date1.y;
+} 
+APPENDIX 6 
+ User Authentication
+ 
+System userAuth {
+Resource {
+Role r;
+}
+Processes {
+Authentication();
+}
+};
+Process Authentication (){
+String name, pass;
+generic AuthorizedUser()=if isAuthenticated(role r1) then true
+else throw UnAuthorizedUserException();
+Bool isAuthenticated (role r) = if r1.username==name && r1.password == pass  then
+validUserMsg else false;
+Where {
+ValidUserMsg()= “user is authorized to perform permission on resource obj”;
+}
+Exception UnAuthorizedUserException()=PrintMsg
+where{
+PrintMsg= “username or password is invalid”;
+}
+}
+
+ 
+APPENDIX 7 
+
+Memory Management
+ 
+System myObject{
+Resources {
+int obj;
+}
+Processes { doSomeThingObject( int obj)
+}
+Process doSomeThingObject(obj)= allocate(obj) fby doSomething(obj) deallocation(obj)
+where {
+allocate(obj)= “object created”; doSomething(obj)= obj+1; deallocation(obj)= release (obj);
+where {
+release(obj)= if obj==eod then obj=nil;
+}
+ 
+APPENDIX 8 
+Secure Session Management	
+System SecureSessionManager{
+Resource {
+SessionData;
+}
+Process {
+SessionManager(), CheckAuthentication();}
+};
+Resource SessionData(){ String username; Timer ExpirationTime;
+Process SessionManager() {
+generic createSession(string username, int sessionDur) = printSession
+where{
+String commId;
+Timer currentTime;
+Timer expirationTime;
+ExpirationTime= currentTime + sessionDuration; SessionData sessionData; SessionData.username= username; sessionData.ExpirationTime = expirationTime; Sessions[commId]=sessionData;
+printSession= mkString(commId) ^ “has” ^ mkstring(expirationTime);
+}
+Bool Authenticate(string commId)= Find()
+where{
+Find()= if (findSession(sessionid)!= session.end()) then currentTime=null
+elseif (currentTime<=expirationTime) then return true else false;
+}
+}
+Process CheckAuthentication(){ sessionManager sessionManager; string username=”john”;
+string sessionId = sessionManager.CreateSession(username,i); check()= if (sessionManager.authenticate(commId) then printSuccessfulAuth else printErrorAuth;
+where{
+printSuccessfulAuth= "Authentication successful. User: " ^ mkstring(username); printErrorAuth= "Authentication Failed User: ";
+n=3 fby n-1}
+ 
+APPENDIX 9
+
+Integrity
+System SecureComm{
+Resource {
+Certificate cert;
+}
+Process {
+SecureConfiguration (); Integrity();
+}
+}
+Process Integrity() {
+isCertificateValid( string cert)= if !file then PrintFailed fby false else
+PrintSuccessful fby true;
+printFailed = if (result<=0) then “certificate invalid”; printSuccessful= if(result>=0) then “certificate valid”;
+}
+
+Confidentiality
+System confidentiality() {
+Resource {
+ logFile logfile;
+}
+Process { 
+Secrecy()
+}
+}
+Encrypt(generic inputfile, generic output file) = encryptFile()
+where {
+encryptFile() =” encryption succesful”;
+}
+decrypt(generic inputfile, generic output file) = decryptFile()
+where {
+decryptFile() =” decryption succesful”;
+}
+ 
+Appendix 10
+// Banking System Application
+System BankingSystemWebApplication{ Resources {
+PolicyDatabase dbPolicyStorage; DepositAccount depositAccount; LoanAccount loanAccount;
+ledgerAccount ledgerAccount; GeneralLedgerReport generalLedgerReport; LedgerPostingRule ledgerPostingRule;
+}
+Processes {
+PolicySetupProcess, AuthorizationCheckProcess;
+}
+}
+
+//PolicySetupProcess ()
+
+Process PolicySetupProcess () {
+setUserRoles (string username, int bankRole, int PRRole,int num) = case bankRole of { CUSTOMERSERVICEREP:dbPolicyStorage.AddUserRole(username, CUSTOMERSERVICEREP, PRRole, num);
+TELLER: dbPolicyStorage.AddUserRole(username, TELLER, PRRole, num);
+LOANOFFICER, dbPolicyStorage.AddUserRole(username, LOANOFFICER, PRRole, num);
+ACCOUNTANT: dbPolicyStorage.AddUserRole(username, ACCOUNTANT, PRRole,num);
+ACCOUNTMANAGER: dbPolicyStorage.AddUserRole(username, ACCOUNTMANAGER, PRRole,num);
+INTERNALAUDITOR:	dbPolicyStorage.AddUserRole(username, INTERNALAUDITO, PRRole,num);
+BRANCHMANAGERS:	dbPolicyStorage.AddUserRole(username, BRANCHMANAGER, PRRole,num);
+Default: dbPolicyStorage.AddUserRole(username, CLIENT, PRRole,num);
+}
+setPolicyDefinition (int operation, int bankRole) = case bankRole of { CUSTOMERSERVICEREP: case operation of {
+UPDATE:	dbPolicyStorage.setPolicy(CUSTOMERSERVICEREP,	UP DATE, depositAccount);
+CREATE:	dbPolicyStorage.setPolicy(CUSTOMERSERVICEREP,	CRE ATE, depositAccount);
+}
+TELLER: case operation of {
+UPDATE: dbPolicyStorage.setPolicy(TELLER, UPDATE, depositAccount) CREATE: dbPolicyStorage.setPolicy(TELLER, CREATE, depositAccount);
+}
+LOANOFFICER: dbPolicyStorage.setPolicy(LOANOFFICER, CREATE, loanAccount);
+ACCOUNTANT:dbPolicyStorage.setPolicy(ACCOUNTANT,CREATE, ledgerAccount);
+ACCOUNTMANAGER:dbPolicyStorage.setPolicy(ACCOUNTMANAG ER, UPDATE, generalLedgerReport);
+INTERNALAUDITOR:dbPolicyStorage.setPolicy(INTERNALAUDITOR, CREATE, ledgerPostingRule);
+BRANCHMANAGERS:dbPolicyStorage.setPolicy(BRANCHMANAGER, VERIFY, ledgerPostingRule);
+Default: dbPolicyStorage.setPolicy(CLIENT, MODIFY, depositAccount);
+}
+
+//Resource role, policy
+
+Resource Role (string userName, int roleName, int role2, int num) { string name=userName;
+int bankRoleId=roleName; int bankRole2= role2;
+int numOfClients=num;
+}
+Resource Policy (int rName, int perm, generic bObj){ int roleName=rName;
+int permission=perm; generic obj=bObj;
+}
+Resource PolicyDatabase () {
+// two list are defined to store user roles and policies List policyList = [];
+List userList = [];
+// operator net to Set policy in the database
+Generic setPolicy (int roleName, int permission, generic resourceObj) = if checkPolicyExist(roleName, permission, resourceObj) then printMsg else addPolicy () fby policyGrantedMsg
+where {
+addPolicy() = policyList<>
+[%Policy (roleName, permission, resourceObj) %]; policyGrantedMsg= “Policy granted”;
+printMsg= “Policy Already Present in DB”;
+}
+//checkPolicyExist() operator net
+
+// operator net to check policy in the database
+Bool checkPolicyExist (int bankRoleId, int permission, generic resourceObj) = findPolicyExist () asa L==nil
+where {
+L is current policyList;
+findPolicyExist	()	=if	(temp.	roleName==bankRoleId	&&	temp. permission==permission && temp.obj== resourceObj then true else false
+where {
+if L!=nil then temp = hd(L) fby t1(L) else throw outOfBoundAccess();
+}
+}
+//addUserRole() in a userList
+// operator net to set roles in database
+addUserRole	(string	userName,	int	roleName,		int	PRRole,	int	num)	=if
+checkRoleExist(userName, roleName, PRRole) then	PrintMsg else CheckRules()
+where {
+printMsg= “Role Already Present in DB”;
+checkRules()=	if	HasSOD(roleName,PRRole)||hasDSOCD(roleName,PRRole)	then conflictMsg else addRole()
+Where {
+conflictMsg = “cannot add roles as conflicting Role”;
+addRole () = userList <> [%role (userName, roleName, PRRole, num) %];
+}
+}
+//Process BankingSystemCheckProcess() using Security Requirements
+
+Process BankingSystemCheckProcess () { string name;
+int roleId;
+ int PRRol;
+int permission; generic obj;
+PolicyDatabase dbPolicyStorage; dataValidation input, output; SecureSessionManagement auth;
+ CommnicationSecurity c;
+Logfile logFile1; Generic query;
+generic SanitizeInput()= if Input.InputValidation(query)	then isAuthorizedUser(name,roleId,PRRole,obj) else abort();
+generic isAuthorizedUser(name,roleId,PRRole,obj)=if dbPolicyStorage.checkRoleExist(name,roleId,PRRole)	&& dbPolicyStorage.checkPolicyExist(roleId,permission,obj))	then auth.Authenticate(name) else exceptionLoginFailure()
+where {
+bool showOutput = if output.outputValidation(actionAllowed) then mkstring(name)^	“is	authenticated	and	has	rights	to	perform”	^ mkstring(permission) ^ “task on” ^ mkstring(obj);logFile1.Write(c.confidentiality(mkstring(name)^ “is authenticated and has rights to perform” ^ mkstring(permission) ^ “task on” ^ mkstring(obj)”;
+}
+Exception exceptionLoginFailure () = logFailureMsg() Where {
+logFailureMsg()= c.Integrity(name)^ “is not allowed to perform” ^ mkstring(permission) ^ “on “^ mkstring(obj);
+}
+
+//Separation of Duty Concern (SOD) and Dynamically SOD
+
+// Rule to check Separation of Duty Concern //(SOD)
+Bool HasSOD (int roleName, int roleName2) = SOD () where {
+SOD	()	=	if	roleName	==	ACCOUNTMANAGER	&&   roleName2	== CUSTOMERSERVICEREP)			||		(roleName
+== CUSTOMERSERVICEREP && roleName2==ACCOUNTMANAGER) then true else if …. else false;
+}
+// Rule to check Dynamically SOD concern	// (DSODC) Bool HasDSoDC (int roleName, int roleName2) = DSOD ()
+where {
+DSOD()=if roleName == CUSTOMERSERVICEREP && roleName2 ==LOANOF FICER)	||(roleName==	LOANOFFICER && roleName2 == CUSTOMERSERVICEREP) then true else false;
+}
+// operator net checks if the role is already
+// added in the database
+Bool checkRoleExist (string userName, int bankRoleName)=FindRoleExit () asa R==nil where {
+R is current userList;
+FindbyRoleIdCheck ()= if (tempRole.userName == userName && tempRole.bankRoleId
+== bankRoleName then true else false; where {
+if R!=nil then tempRole = hd (R) fby tl(R) else throw ExceptionOutOfBoundAccess();
+}
+}
+ 
+APPENDIX 11
+using System;
+using System.Collections.Generic; using System.IO;
+using System.Text; using OpenAI_API;
+using OpenAI_API.Completions;
+
+namespace CompilerExample
+{
+public enum TokenType
+{
+Identifier, Keyword, Symbol, Literal, Comment, Invalid,
+
+// Add custom token types based on the "realspec" grammar rules Resource,
+List, Int, Bool, Mutex, Case, Of, Default, If, Then,
+WriteOnly, ReadOnly, Pattern, Date
+// Add more token types as needed
+}
+
+public class Token
+{
+public TokenType Type { get; } public string Value { get; }
+
+public Token(TokenType type, string value)
+ 
+
+{
+Type = type; Value = value;
+}
+}
+
+public class Parser
+{
+public readonly List<Token> tokens; private int currentTokenIndex;
+
+public Parser(List<Token> tokens)
+{
+this.tokens = tokens; currentTokenIndex = 0;
+}
+
+public void Parse()
+{
+// Start parsing from the top-level rule ParseResourceDeclaration();
+}
+
+private void ParseResourceDeclaration()
+{
+// Grammar Rule: Resource <identifier> (<parameter_list>) Match(TokenType.Resource);
+Match(TokenType.Identifier); Match(TokenType.Symbol, "("); ParseParameterList(); Match(TokenType.Symbol, ")");
+}
+
+private void ParseParameterList()
+{
+// Grammar Rule: <parameter> (, <parameter>)* ParseParameter();
+
+while (Match(TokenType.Symbol, ","))
+{
+ParseParameter();
+}
+}
+
+private void ParseParameter()
+{
+ 
+
+// Grammar Rule: <type> <identifier> ParseType(); Match(TokenType.Identifier);
+}
+
+private void ParseType()
+{
+// Grammar Rule: int | bool | list
+if (!Match(TokenType.Int) && !Match(TokenType.Bool) && !Match(TokenType.List))
+{
+// Throw an error or handle unexpected token
+}
+}
+
+// Utility method to match the expected token type and consume the next token private bool Match(TokenType expectedType, string expectedValue = "")
+{
+if (currentTokenIndex >= tokens.Count)
+{
+// Throw an error or handle unexpected end of input return false;
+}
+
+Token currentToken = tokens[currentTokenIndex]; if (currentToken.Type == expectedType &&
+(string.IsNullOrEmpty(expectedValue) || currentToken.Value == expectedValue))
+{
+currentTokenIndex++; return true;
+}
+// Throw an error or handle unexpected token return false;
+}
+}
+
+public class Compiler
+{
+public static void Main()
+{
+try
+{
+string code = File.ReadAllText("../../../datavalidation.txt"); LexicalAnalyzer lexicalAnalyzer = new LexicalAnalyzer(code);
+
+List<Token> tokens = new List<Token>();
+ 
+
+Token? token; do
+{
+token = lexicalAnalyzer.GetNextToken(); if (token != null)
+{
+tokens.Add(token);
+}
+} while (token!= null);
+
+Parser parser = new Parser(tokens); parser.Parse();
+
+
+foreach (var tok in parser.tokens)
+{
+Console.WriteLine("token Type = {0}, value ={1}", tok.Type,tok.Value);
+
+}
+
+
+Console.WriteLine("Parsing completed."); Console.WriteLine("generating c++ code");
+var openai = new OpenAIAPI("sk- IXb59xJL8NVenTFLpftaT3BlbkFJTzsp1oM0wJFEZGTrcZ6I");
+Console.WriteLine("output:");
+var completion_request = new CompletionRequest(); completion_request.Prompt = code;
+completion_request.Model = OpenAI_API.Models.Model.DavinciText; completion_request.MaxTokens = 800;
+var completion = openai.Completions.CreateCompletionsAsync(completion_request, 1);
+foreach (var comp in completion.Result.Completions)
+{
+Console.WriteLine(comp.Text);
+}
+
+}
+
+catch (FileNotFoundException)
+{
+Console.WriteLine("Input file not found.");
+}
+catch (Exception ex)
+{
+Console.WriteLine("An error occurred: " + ex.Message);
+ 
+
+}
+}
+
+
+public class LexicalAnalyzer
+{
+private readonly string code; private int position;
+private static readonly string[] symbols = { "(", ")", "{", "}", "=", ";", ",", "[", "]", ".", "<<", ">>" };
+private static readonly string[] keywords = { "Resource", "where", "list", "int", "bool", "mutex", "case", "of", "Default", "if", "then" };
+public LexicalAnalyzer(string code)
+{
+this.code = code; position = 0;
+}
+public Token? GetNextToken()
+{
+if (position >= code.Length)
+{
+return null;
+}
+char currentChar = code[position];
+// Check for whitespace
+if (char.IsWhiteSpace(currentChar))
+{
+position++;
+return GetNextToken();
+
+// Check for symbols
+foreach (var symbol in symbols)
+{
+if (code.Substring(position).StartsWith(symbol))
+{
+position += symbol.Length;
+return new Token(TokenType.Symbol, symbol);
+}
+}
+// Check for keywords
+foreach (var keyword in keywords)
+{
+if (code.Substring(position).StartsWith(keyword))
+{
+position += keyword.Length;
+return new Token(TokenType.Keyword, keyword);
+ 
+
+}
+}
+// Check for identifiers
+if (char.IsLetter(currentChar))
+{
+StringBuilder identifier = new StringBuilder(); identifier.Append(currentChar);
+position++;
+
+while (position < code.Length && (char.IsLetterOrDigit(code[position]) || code[position] == '_'))
+{
+identifier.Append(code[position]); position++;
+}
+return new Token(TokenType.Identifier, identifier.ToString());
+}
+// Check for literals
+if (char.IsDigit(currentChar))
+{
+StringBuilder literal = new StringBuilder(); literal.Append(currentChar);
+position++;
+
+while (position < code.Length && char.IsDigit(code[position]))
+{
+literal.Append(code[position]); position++;
+}
+
+return new Token(TokenType.Literal, literal.ToString());
+}
+
+// Invalid token position++;
+return new Token(TokenType.Invalid, currentChar.ToString());
+}
+}
+}
+} 
+Appendix 12
+mutex fileMutex;
+
+void writeFile(const string& filename, const string& content) { lock_guard< mutex> lock(fileMutex); // Acquire the lock
+
+ofstream file(filename, ios::app); if (file.is_open()) {
+file << content << endl; file.close();
+cout << "Successfully wrote to file: " << filename << endl;
+} else {
+cerr << "Failed to open file for writing: " << filename << endl;
+}
+// The lock is automatically released when 'lock' goes out of scope
+}
+string readFile(const string& filename) {
+lock_guard< mutex> lock(fileMutex); // Acquire the lock string content;
+ifstream file(filename); if (file.is_open()) {
+string line;
+while (getline(file, line)) { content += line + "\n";
+}
+file.close();
+cout << "Successfully read from file: " << filename <<endl;
+} else {
+cerr << "Failed to open file for reading: " << filename <<endl;
+}
+// The lock is automatically released when 'lock' goes out of scope
+
+return content;
+}
+
+int main() {
+string filename = "example.txt";
+string content = "Successfully write to file!";
+
+// Write to file writeFile(filename, content);
+
+// Read from file
+string fileContent = readFile(filename);
+cout << "File Content:\n" << fileContent <<endl;
+
+return 0;
+}
+ 
+Appendix 13 
+//C++ code for Secure Error Message
+
+class ResourcePolicy { private:
+string rolename; string subject;
+int wordiness; string object;
+
+public:
+ResourcePolicy(string rolename, string subject, string wordiness, string errorMessage) { rolename = rolename;
+subject = subject; action = wordiness; object = errorMessage;
+}
+
+bool isAuthorizedUser(string name, string subject, string wordiness, string errorMessage) { return checkPolicyExists(name, subject, wordiness, errorMessage);
+}
+
+bool checkPolicyExists(string name, string subject, string wordiness, string errorMessage) { return (name == "ben" && subject == "developer" && wordiness == "stacktrace" &&
+errorMessage== "ErrorMessage");
+}
+
+void ControlErrorMessageVerbosity() {
+if (isAuthorizedUser(rolename, subject, action, object))
+cout << rolename << " Authorized User can see verbose error messages" << endl; else
+cout << rolename << " unAuthorized User " << endl;
+}
+};
+
+int main() {
+ResourcePolicy policy("ben", "developer", "stacktrace", "ErrorMessage"); cout<<"\n";
+ResourcePolicy policy1("betn", "developer", "stacktrace", "ErrorMessage"); cout<<"\n";
+ResourcePolicy policy2("sara", "developer", "stacktrace", "ErrorMessage");
+cout<<"\n";
+
+policy.ControlErrorMessageVerbosity(); policy1.ControlErrorMessageVerbosity(); policy2.ControlErrorMessageVerbosity();
+
+return 0;
+} 
+Appendix 14
+class dataValidation { public:
+bool validateInput(const string& input) {
+regex pattern(".*\\b\d+\\b.\1",regex_constants::icase);
+
+if (regex_match(input, pattern)) {
+cout << "invalid input: SQL injection tautology detected." << endl; return false;
+}
+return true;
+}
+bool validateOutput(const string& output) {
+regex pattern(".*\\b|SCRIPT|>|<\\b.*", regex_constants::icase);
+
+if (regex_match(output, pattern)) {
+string encodedOutput = asciiEncode(output);
+cout << "Invalid output: XSS attack detected" << endl; cout << "Encoded output: " << encodedOutput << endl; return false;
+}
+return true;
+}
+string asciiEncode(const string& input) { string encodedString;
+
+for (char c : input) { switch (c) {
+case '<':
+encodedString += "&#60;"; break;
+case '>':
+encodedString += "&#62;"; break;
+case '(':
+encodedString += "&#40;"; break;
+case ')':
+encodedString += "&#41;"; break;
+case 's':
+case 'S':
+encodedString += "&#115;"; break;
+case 'c':
+case 'C':
+encodedString += "&#99;"; break;
+case 'r':
+case 'R':
+encodedString += "&#114;"; break;
+case 'i':
+case 'I':
+encodedString += "&#105;"; break;
+case 'p':
+case 'P':
+encodedString += "&#112;"; break;
+case 't':
+case 'T':
+encodedString += "&#116;"; break;
+case 'a':
+case 'A':
+encodedString += "&#97;"; break;
+case 'l':
+ 
+case 'L':
+encodedString += "&#108;"; break;
+case 'e':
+case 'E':
+encodedString += "&#101;"; break;
+default:
+encodedString += c; break;
+}
+}
+return encodedString;
+}
+};
+int main() {
+string userInput;
+cout << "Enter input: "; cin>> userInput; dataValidation d1;
+
+if (d1.validateInput(userInput)) {
+cout << "Valid input. Proceed with further processing." << endl;
+}
+else {
+cout << "Input validation failed. Aborting." << endl;
+}
+
+string userOutput;
+cout << "Enter output: "; cin>>userOutput;
+
+if (d1.validateOutput(userOutput)) {
+cout << "Output contains XSS pattern.encoded output is"
+<<d1.asciiEncode(userOutput)<< endl;
+}
+else {
+cout << "go ahead" << endl;
+}
+
+return 0;
+} 
+Appendix 14
+const int BUFFER_SIZE = 10; int main() {
+char buffer[BUFFER_SIZE];
+
+cout << "Enter input: "; cin.getline(buffer, BUFFER_SIZE);
+
+
+if (strlen(buffer) < BUFFER_SIZE - 1) { char destination [BUFFER_SIZE]; strcpy(destination, buffer);
+cout << "Copied input: " << destination << endl;
+} else {
+cout << "Input exceeded buffer size. Aborting." << endl;
+}
+return 0;
+}
+
+
+ 
+APPENDIX 15
+// Structure to store session information struct SessionData {
+string username; time_t expirationTime;
+};
+
+class SessionManager { public:
+unordered_map<string, SessionData> sessions;
+
+string createSession(const string& username, int sessionDuration) { string sessionId = generateSessionId();
+time_t currentTime = time(nullptr);
+time_t expirationTime = currentTime + sessionDuration;
+
+SessionData sessionData; sessionData.username = username; sessionData.expirationTime = expirationTime;
+
+sessions[sessionId] = sessionData; cout<<sessionId<<endl<<expirationTime;
+return sessionId;
+}
+
+bool authenticate(const string& sessionId) {
+if (sessions.find(sessionId) != sessions.end()) { time_t currentTime = time(nullptr);
+time_t expirationTime = sessions[sessionId].expirationTime;
+
+if (currentTime <= expirationTime) { return true;
+} else {
+sessions.erase(sessionId);
+}
+}
+
+return false;}
+private:
+string generateSessionId() {
+
+return to_string(rand());
+}
+};
+
+int main() {
+
+SessionManager sessionManager; for(int i=3;i>-2;i--)
+{
+
+string username = "john";
+string sessionId = sessionManager.createSession(username, i);
+
+
+if (sessionManager.authenticate(sessionId)) {
+cout << "Authentication successful. User: " << username << endl;
+} else {
+cout << "Authentication failed." << endl;
+}
+
+}
+return 0;
+}
+ 
+APPENDIX 16
+class MyObject { public:
+MyObject() {
+cout << "MyObject created." << endl;
+}
+~MyObject() {
+cout << "MyObject closed." << endl;
+}
+void doSomething() {
+cout << "Doing something." << endl;
+}
+};
+int main() {
+// Step 3: Create an instance of the class MyObject* myObject = new MyObject();
+
+// Step 4: Use the object myObject->doSomething();
+
+// Step 5: Close and deallocate the object delete myObject;
+return 0;
+}
+ 
+Appendix 17
+class communicationSecurity{
+
+void encryptFile(const string& inputFile, const string& outputFile, char key) { ifstream fin(inputFile, ios::binary);
+ofstream fout(outputFile, ios::binary);
+
+if (fin && fout) { char ch;
+while (fin.get(ch)) {
+ch ^= key; // XOR encryption fout.put(ch);
+}
+cout << "Encryption successful. Encrypted file: " << outputFile << endl;
+}
+else {
+cerr << "Error opening files." << endl;
+}
+fin.close();
+fout.close();
+}
+void decryptFile(const string& inputFile, const std::string& outputFile, char key) { encryptFile(inputFile, outputFile, key); // XOR decryption is the same as encryption cout << "Decryption successful. Decrypted file: " << outputFile << endl;
+}
+bool isCertificateValid(const std::string& certificatePath) {
+// Load the certificate file
+FILE* file = fopen(certificatePath.c_str(), "r"); if (!file) {
+cout << "Failed to open certificate file." << endl; return false;
+}
+// Read the certificate from the file
+X509* certificate = PEM_read_X509(file, nullptr, nullptr, nullptr); fclose(file);
+
+if (!certificate) {
+cout << "Failed to read certificate." << endl; return false;
+}
+// Check the validity of the certificate
+int result = X509_cmp_current_time(X509_get_notBefore(certificate)); if (result <= 0) {
+cout << "Certificate is not yet valid." << endl; X509_free(certificate);
+return false;
+}
+result = X509_cmp_current_time(X509_get_notAfter(certificate)); X509_free(certificate);
+
+if (result > 0) {
+cout << "Certificate has expired." << endl; return false;
+}
+cout << "Certificate is valid." << endl; return true;
+}
+};
+
+int main() {
+string inputFile = "input.txt";
+string encryptedFile = "encrypted.txt"; string decryptedFile = "decrypted.txt"; char key = 'K'; // Encryption key
+
+// Encrypt the file
+encryptFile(inputFile, encryptedFile, key);
+cout<< " file is encrypted"<<endl;
+// Decrypt the file
+decryptFile(encryptedFile, decryptedFile, key); cout<< " file is dencrypted"<<endl;
+return 0;
+}
+ 
+APPENDIX 18
+Class bankAccount {
+ String name; int id;
+double money;
+}
+// Class representing the Banking System Web Application class BankingSystemWebApplication {
+private:
+PolicyDatabase dbPolicyStorage;
+bankAccount depositAccount, loanAccount, ledgerAccount, generalLedgerReport, ledgerPostingRule, policySetupProcess, authorizationCheckProcess;
+vector<Role> userList;
+public:
+// Constructor and other necessary member functions can be added here
+};
+// Class representing the Policy Database class PolicyDatabase {
+public:
+bool checkRoleExist(std::string userName, int bankRoleId, int PRRole) { for (const Role& temp: userList) {
+if (temp.userName == userName && temp.roleName == roleName && temp.PRRole == PRRole)
+{
+return false;}
+bool checkPolicyExist(int bankRoleId, int permission, generic resourceObj)	{ for (const Role& temp : userList) {
+if (temp.userName == userName && temp.roleName == roleName && temp.PRRole == PRRole) {
+return false;
+}
+void addUserRole(string username, int bankroleId) {
+if (checkRoleExist(string username, int bankRoleId)) cout<<”Role already Present in DB” )<<endl;
+}else{
+Role newRole(userName, bankRoleId); userList.push_back(newRole);
+}
+}
+};
+// Class representing the Banking System Check Process class BankingSystemCheckProcess {
+private:
+string name; 
+int roleId; int PRRole;
+int permission; generic obj;
+PolicyDatabase dbPolicyStorage; dataValidation Input; SecureSessionManagement auth; CommunicationSecurity c; Logfile logFile1;
+public:
+void SanitizeInput(Generic query) { if (Input.InputValidation(query)) {
+isAuthorizedUser(name, roleId, PRRole, obj);
+} else {
+// Handle abort condition
+}
+}
+void isAuthorizedUser(std::string name, int roleId, int PRRole, generic obj) {
+if	(dbPolicyStorage.checkRoleExist(name,	roleId,	PRRole)	&& dbPolicyStorage.checkPolicyExist(roleId, permission, obj)) {
+auth.Authenticate(name);
+// Output validation and logging
+bool actionAllowed = true; // You need to define this based on your business logic bool showOutput = output.outputValidation(actionAllowed);
+if (showOutput) {
+string logMessage = name + " is authenticated and has rights to perform " + to_string(permission) + " task on " + obj;
+logFile1.Write(c.confidentiality(logMessage));
+}
+} else {
+// Handle unauthorized access exceptionLoginFailure();
+}
+}
+void exceptionLoginFailure() {
+string failureMessage = c.Integrity(name) + " is not allowed to perform " + to_string(permission) + " on " + obj;
+logFile1.Write(failureMessage);
+}
+};
